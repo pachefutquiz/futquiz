@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FutQuiz - Trivias Tácticas de Fútbol</title>
+    <style>
+        :root {
+            --primary-neon: #00ff66;
+            --secondary-neon: #00ffff;
+            --danger-neon: #ff0055;
+            --gold: #ffd700;
+            --dark-pitch: #0a0e17;
+            --panel-bg: #121926;
+        }
+        body {
+            margin: 0; padding: 10px;
+            background-color: var(--dark-pitch);
+            color: white;
+            font-family: system-ui, sans-serif;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .game-container { width: 100%; max-width: 420px; }
+        .global-header {
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--panel-bg); padding: 12px; border-radius: 14px;
+            margin-bottom: 12px; border: 1px solid #1e2b40; font-weight: bold;
+        }
+        .coins-box { color: var(--gold); }
+        #menu-principal { display: flex; flex-direction: column; gap: 8px; }
+        .menu-title { text-align: center; font-size: 24px; font-weight: 900; margin: 10px 0; color: var(--primary-neon); letter-spacing: 1px; }
+        .grid-juegos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .card-juego {
+            background: var(--panel-bg); border: 2px solid #1e2b40; border-radius: 12px;
+            padding: 12px 6px; text-align: center; cursor: pointer; min-height: 80px;
+            display: flex; flex-direction: column; justify-content: center;
+        }
+        .card-juego h3 { margin: 0 0 4px 0; font-size: 13px; color: var(--secondary-neon); }
+        .card-juego p { margin: 0; font-size: 10px; color: #7084a3; }
+        
+        #pantalla-niveles { display: none; text-align: center; }
+        .lista-niveles { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+        .btn-nivel {
+            background: var(--panel-bg); border: 2px solid #22334d; color: white;
+            padding: 15px; border-radius: 12px; font-size: 15px; font-weight: bold;
+            display: flex; justify-content: space-between; align-items: center; cursor: pointer;
+        }
+        
+        #pantalla-juego { display: none; }
+        .game-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .btn-back { background: transparent; border: 1px solid var(--danger-neon); color: var(--danger-neon); padding: 5px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .info-box { background: var(--panel-bg); border-left: 4px solid var(--primary-neon); padding: 10px; border-radius: 0 10px 10px 0; margin-bottom: 10px; text-align: center; }
+        
+        #cancha {
+            width: 100%; height: 390px;
+            background: linear-gradient(180deg, #113b18 0%, #1c5e27 100%);
+            border: 3px solid rgba(255,255,255,0.6); border-radius: 16px;
+            position: relative; overflow: hidden;
+        }
+        .linea-m { position: absolute; top: 50%; width: 100%; height: 2px; background: rgba(255,255,255,0.2); }
+        .circulo-c { position: absolute; top: 50%; left: 50%; width: 70px; height: 70px; border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; transform: translate(-50%, -50%); }
+        
+        .jugador { position: absolute; width: 65px; text-align: center; transform: translate(-50%, -50%); }
+        .ficha { width: 34px; height: 34px; background: white; color: black; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 11px; border: 2px solid var(--dark-pitch); box-shadow: 0 3px 6px rgba(0,0,0,0.3); }
+        .ficha.incognito { background: var(--danger-neon) !important; color: white !important; }
+        .ficha.intruso { background: var(--gold) !important; color: black !important; }
+        .ficha.enmascarado { background: #334155 !important; color: white !important; }
+        
+        /* DISEÑOS LEGALES DE CAMISETAS */
+        .ficha.boca { background: linear-gradient(180deg, #002244 0%, #002244 35%, #ffb612 35%, #ffb612 65%, #002244 65%); color: white; }
+        .ficha.river { background: linear-gradient(135deg, white 0%, white 40%, #ff0000 40%, #ff0000 60%, white 60%); color: black; }
+        .ficha.argentina { background: linear-gradient(90deg, #74ACDF 0%, #74ACDF 33%, white 33%, white 66%, #74ACDF 66%); color: black; }
+        .ficha.europea { background: #0052cc; color: white; }
+
+        .nombre-label { background: rgba(10, 14, 23, 0.85); padding: 2px 4px; border-radius: 4px; font-size: 9px; font-weight: bold; margin-top: 3px; border: 1px solid rgba(255,255,255,0.1); white-space: nowrap; }
+        
+        #panel-mayor-menor { display: none; justify-content: center; gap: 15px; margin-top: 15px; }
+        .btn-updown { padding: 12px 25px; font-size: 16px; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; }
+        .btn-up { background: var(--primary-neon); color: black; }
+        .btn-down { background: var(--danger-neon); color: white; }
+        #panel-escritura { margin-top: 12px; text-align: center; }
+        .input-game { width: 80%; padding: 12px; font-size: 15px; border: 2px solid #1e2b40; border-radius: 10px; background: var(--panel-bg); color: white; text-align: center; }
+        .btn-action { width: 85%; padding: 12px; margin-top: 8px; font-size: 15px; font-weight: bold; background: var(--primary-neon); border: none; border-radius: 10px; cursor: pointer; color: black; }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <div class="global-header">
+            <span style="letter-spacing: 1.5px; color: var(--secondary-neon);">FUTQUIZ 🏆</span>
+            <div class="coins-box">🪙 <span id="global-coins">100</span> FC</div>
+        </div>
+
+        <div id="menu-principal">
+            <div class="menu-title">MODALIDADES DE TRIVIA</div>
+            <div class="grid-juegos">
+                <div class="card-juego" onclick="verNiveles(1)"><h3>🔍 1. El Incógnito</h3><p>¿Quién falta en la cancha?</p></div>
+                <div class="card-juego" onclick="verNiveles(2)"><h3>❌ 2. El Intruso</h3><p>Uno nunca jugó acá.</p></div>
+                <div class="card-juego" onclick="verNiveles(3)"><h3>🌍 3. Adiviná el Club</h3><p>Sacá el club por los nombres.</p></div>
+                <div class="card-juego" onclick="verNiveles(4)"><h3>🎭 4. Enmascarado</h3><p>Destapá fichas y adiviná.</p></div>
+                <div class="card-juego" onclick="verNiveles(6)"><h3>⚔️ 6. Rival Histórico</h3><p>¿Contra quién jugaron?</p></div>
+                <div class="card-juego" onclick="verNiveles(7)"><h3>📈 7. Valor de Mercado</h3><p>¿Vale Mayor o Menor?</p></div>
+            </div>
+        </div>
+
+        <div id="pantalla-niveles">
+            <div class="game-nav">
+                <h3 style="margin:0;">NIVELES DISPONIBLES</h3>
+                <button class="btn-back" onclick="volverMenuPrincipal()">Volver</button>
+            </div>
+            <div class="lista-niveles" id="contenedor-botones-niveles"></div>
+        </div>
+
+        <div id="pantalla-juego">
+            <div class="game-nav">
+                <span id="game-mode-title" style="color: var(--secondary-neon); font-weight: bold; font-size:13px;">DESAFÍO ACTIVO</span>
+                <button class="btn-back" onclick="volverASelectorNiveles()">Salir</button>
+            </div>
+            <div class="info-box"><div id="game-prompt" style="font-size: 13px;">Consigna...</div></div>
+            <div id="cancha">
+                <div class="linea-m"></div>
+                <div class="circulo-c"></div>
+                <div id="jugadores-layer"></div>
+            </div>
+            <div id="panel-escritura">
+                <input type="text" id="input-answer" class="input-game" placeholder="Escribí tu respuesta..." autocomplete="off">
+                <button class="btn-action" onclick="evaluarRespuesta()">Arriesgar</button>
+            </div>
+            <div id="panel-mayor-menor">
+                <button class="btn-updown btn-up" onclick="evaluarMayorMenor('mayor')">MAYOR ↑</button>
+                <button class="btn-updown btn-down" onclick="evaluarMayorMenor('menor')">MENOR ↓</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+const dbMundoFútbol = {
+    1: [
+        { name: "Nivel 1: Barça 2011", prompt: "Campeón de Champions. ¿Qué MC completa este Barcelona histórico?", respuesta: "iniesta", jugadores: [{n:"Valdés",x:50,y:85,style:"europea"},{n:"Piqué",x:65,y:72,style:"europea"},{n:"Mascherano",x:35,y:72,style:"europea"},{n:"Xavi",x:72,y:52,style:"europea"},{n:"Busquets",x:50,y:58,style:"europea"},{n:"¿?",x:28,y:52, type:"incognito"},{n:"Messi",x:50,y:22,style:"europea"}] },
+        { name: "Nivel 2: Inter 2010", prompt: "¿Qué delantero letal falta en este Inter del Triplete?", respuesta: "milito", jugadores: [{n:"César",x:50,y:85,style:"europea"},{n:"Zanetti",x:35,y:55,style:"europea"},{n:"Cambiasso",x:65,y:55,style:"europea"},{n:"Sneijder",x:50,y:40,style:"europea"},{n:"¿?",x:50,y:18, type:"incognito"}] }
+    ],
+    2: [
+        { name: "Nivel 1: Intruso en Boca", prompt: "Uno de estos futbolistas JAMÁS jugó en la primera de Boca Juniors.", respuesta: "saviola", jugadores: [{n:"Abbondanzieri",x:50,y:85,style:"boca"},{n:"Schiavi",x:50,y:72,style:"boca"},{n:"Riquelme",x:50,y:38,style:"boca"},{n:"Tevez",x:30,y:20,style:"boca"},{n:"Saviola",x:70,y:20, type:"intruso"}] },
+        { name: "Nivel 2: Intruso en Real Madrid", prompt: "Uno de estos nunca se puso la camiseta oficial del Madrid.", respuesta: "cavani", jugadores: [{n:"Casillas",x:50,y:85,style:"europea"},{n:"Ramos",x:63,y:72,style:"europea"},{n:"Modric",x:70,y:52,style:"europea"},{n:"Benzema",x:50,y:20,style:"europea"},{n:"Cavani",x:78,y:25, type:"intruso"}] }
+    ],
+    3: [
+        { name: "Nivel 1: Titulares alemanes", prompt: "¿Qué club grande de Europa alinea estos jugadores hoy?", respuesta: "bayern munich", jugadores: [{n:"Neuer",x:50,y:85,style:"europea"},{n:"Davies",x:20,y:70,style:"europea"},{n:"Kimmich",x:80,y:70,style:"europea"},{n:"Musiala",x:50,y:40,style:"europea"},{n:"Harry Kane",x:50,y:20,style:"europea"}] },
+        { name: "Nivel 2: Superclásico", prompt: "¿Qué grande de Argentina alinea estos nombres históricos?", respuesta: "river", jugadores: [{n:"Barovero",x:50,y:85,style:"river"},{n:"Maidana",x:50,y:72,style:"river"},{n:"Ponzio",x:50,y:55,style:"river"},{n:"Cavenaghi",x:50,y:20,style:"river"}] }
+    ],
+    4: [
+        { name: "Nivel 1: Selección Oculta", prompt: "Tocá las fichas oscuras para develar la pista (-10 FC). ¿Qué país es?", respuesta: "francia", jugadores: [{n:"Maignan",x:50,y:85, type:"mask",style:"europea"},{n:"Kanté",x:50,y:55, type:"mask",style:"europea"},{n:"Mbappé",x:50,y:20, type:"mask",style:"europea"}] }
+    ],
+    6: [
+        { name: "Nivel 1: Final México 86", prompt: "Argentina fue campeón con este 11. ¿A qué país venció en la final?", respuesta: "alemania", jugadores: [{n:"Pumpido",x:50,y:85,style:"argentina"},{n:"Ruggeri",x:35,y:72,style:"argentina"},{n:"Maradona",x:50,y:35,style:"argentina"},{n:"Valdano",x:50,y:18,style:"argentina"}] }
+    ],
+    7: [
+        { name: "Nivel 1: Arsenal FC", prompt: "El plantel actual del Arsenal inglés, ¿Vale MAYOR o MENOR que €1.000 Millones?", respuesta: "mayor", jugadores: [{n:"Raya",x:50,y:85,style:"europea"},{n:"Saliba",x:65,y:72,style:"europea"},{n:"Rice",x:50,y:55,style:"europea"},{n:"Saka",x:80,y:22,style:"europea"}], esEspecial: true }
+    ]
+};
+
+let monedas = 100;
+let juegoActual = null;
+let nivelActual = null;
+
+function verNiveles(idJuego) {
+    juegoActual = idJuego;
+    document.getElementById("menu-principal").style.display = "none";
+    document.getElementById("pantalla-niveles").style.display = "block";
+    
+    let lista = document.getElementById("contenedor-botones-niveles");
+    lista.innerHTML = "";
+    
+    dbMundoFútbol[idJuego].forEach((niv, idx) => {
+        const btn = document.createElement("button");
+        btn.className = "btn-nivel";
+        btn.innerHTML = `<span>⚽ ${niv.name}</span> <span>➔</span>`;
+        btn.onclick = () => cargarCanchaNivel(idx);
+        lista.appendChild(btn);
+    });
+}
+
+function cargarCanchaNivel(idxNivel) {
+    nivelActual = idxNivel;
+    let datosNivel = dbMundoFútbol[juegoActual][idxNivel];
+    
+    document.getElementById("pantalla-niveles").style.display = "none";
+    document.getElementById("pantalla-juego").style.display = "block";
+    document.getElementById("game-prompt").innerText = datosNivel.prompt;
+    document.getElementById("input-answer").value = "";
+    
+    if (datosNivel.esEspecial) {
+        document.getElementById("panel-escritura").style.display = "none";
+        document.getElementById("panel-mayor-menor").style.display = "flex";
+    } else {
+        document.getElementById("panel-escritura").style.display = "block";
+        document.getElementById("panel-mayor-menor").style.display = "none";
+    }
+    
+    dibujarFichas(datosNivel.jugadores);
+}
+
+function dibujarFichas(jugadores) {
+    const capa = document.getElementById("jugadores-layer");
+    capa.innerHTML = ""; 
+    
+    jugadores.forEach((j, index) => {
+        const div = document.createElement("div");
+        div.className = "jugador";
+        div.style.left = j.x + "%";
+        div.style.top = j.y + "%";
+        
+        let claseFicha = "ficha";
+        if(j.style) { claseFicha += " " + j.style; }
+        
+        let textoFicha = "⚽";
+        let textoNombre = j.n;
+        
+        if (j.type === "incognito") { claseFicha += " incognito"; textoFicha = "?"; }
+        if (j.type === "intruso") { claseFicha += " intruso"; }
+        if (j.type === "mask") { 
+            claseFicha += " enmascarado"; 
+            textoFicha = "?"; 
+            textoNombre = "Oculto";
+            div.onclick = () => {
+                if (monedas >= 10 && textoNombre === "Oculto") {
+                    monedas -= 10;
+                    document.getElementById("global-coins").innerText = monedas;
+                    div.querySelector(".ficha").classList.remove("enmascarado");
+                    div.querySelector(".ficha").innerText = "⚽";
+                    div.querySelector(".nombre-label").innerText = j.n;
+                }
+            };
+        }
+        
+        div.innerHTML = `
+            <div class="${claseFicha}">${textoFicha}</div>
+            <div class="nombre-label">${textoNombre}</div>
+        `;
+        capa.appendChild(div);
+    });
+}
+
+function evaluarRespuesta() {
+    let nivel = dbMundoFútbol[juegoActual][nivelActual];
+    let rta = document.getElementById("input-answer").value.trim().toLowerCase();
+    if(rta !== "" && (nivel.respuesta.includes(rta) || rta.includes(nivel.respuesta))) {
+        ganar();
+    } else {
+        alert("❌ Incorrecto. ¡Pensá bien la táctica!");
+    }
+}
+
+function evaluarMayorMenor(opcion) {
+    let nivel = dbMundoFútbol[juegoActual][nivelActual];
+    if(opcion === nivel.respuesta) {
+        ganar();
+    } else {
+        alert("❌ Error. El valor de mercado no coincide.");
+    }
+}
+
+function ganar() {
+    monedas += 40;
+    document.getElementById("global-coins").innerText = monedas;
+    alert("🎯 ¡ACERTASTE! Sumás +40 FC.");
+    volverASelectorNiveles();
+}
+
+function volverASelectorNiveles() {
+    document.getElementById("pantalla-juego").style.display = "none";
+    verNiveles(juegoActual); 
+}
+
+function volverMenuPrincipal() {
+    document.getElementById("pantalla-niveles").style.display = "none";
+    document.getElementById("menu-principal").style.display = "flex";
+}
+</script>
+</body>
+</html>
