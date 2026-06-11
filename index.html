@@ -1,0 +1,408 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FutQuiz Elite 2.0 - Trivias Tácticas de Fútbol</title>
+    <style>
+        :root {
+            --primary-neon: #00ff66;
+            --secondary-neon: #00ffff;
+            --danger-neon: #ff0055;
+            --gold: #ffd700;
+            --dark-pitch: #0a0e17;
+            --panel-bg: #121926;
+            --border-glow: rgba(0, 255, 102, 0.15);
+        }
+        body {
+            margin: 0; padding: 10px;
+            background-color: var(--dark-pitch);
+            color: white;
+            font-family: system-ui, sans-serif;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .game-container { width: 100%; max-width: 420px; }
+        .global-header {
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--panel-bg); padding: 12px; border-radius: 14px;
+            margin-bottom: 12px; border: 1px solid #1e2b40; font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        }
+        .coins-box { color: var(--gold); }
+        #menu-principal { display: flex; flex-direction: column; gap: 8px; }
+        .menu-title { text-align: center; font-size: 24px; font-weight: 900; margin: 10px 0; color: var(--primary-neon); letter-spacing: 1px; text-shadow: 0 0 10px var(--border-glow); }
+        .grid-juegos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .card-juego {
+            background: var(--panel-bg); border: 2px solid #1e2b40; border-radius: 12px;
+            padding: 12px 6px; text-align: center; cursor: pointer; min-height: 80px;
+            display: flex; flex-direction: column; justify-content: center;
+            transition: all 0.2s ease;
+        }
+        .card-juego:active { border-color: var(--primary-neon); transform: scale(0.97); }
+        .card-juego h3 { margin: 0 0 4px 0; font-size: 13px; color: var(--secondary-neon); }
+        .card-juego p { margin: 0; font-size: 10px; color: #7084a3; }
+        
+        #pantalla-niveles { display: none; text-align: center; }
+        .lista-niveles { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+        .btn-nivel {
+            background: var(--panel-bg); border: 2px solid #22334d; color: white;
+            padding: 15px; border-radius: 12px; font-size: 14px; font-weight: bold;
+            display: flex; justify-content: space-between; align-items: center; cursor: pointer;
+        }
+        .difficulty-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 900; text-transform: uppercase; }
+        .diff-facil { background: #00ff66; color: black; }
+        .diff-medio { background: #00ffff; color: black; }
+        .diff-dificil { background: #ffaa00; color: black; }
+        .diff-experto { background: #ff0055; color: white; }
+        
+        #pantalla-juego { display: none; }
+        .game-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .btn-back { background: transparent; border: 1px solid var(--danger-neon); color: var(--danger-neon); padding: 5px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .btn-reset { background: transparent; border: 1px solid var(--gold); color: var(--gold); padding: 5px 10px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px; display: inline-block; }
+        .info-box { background: var(--panel-bg); border-left: 4px solid var(--primary-neon); padding: 10px; border-radius: 0 10px 10px 0; margin-bottom: 10px; text-align: center; }
+        
+        #cancha {
+            width: 100%; height: 390px;
+            background: linear-gradient(180deg, #113b18 0%, #1c5e27 100%);
+            border: 3px solid rgba(255,255,255,0.6); border-radius: 16px;
+            position: relative; overflow: hidden;
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.6);
+        }
+        .linea-m { position: absolute; top: 50%; width: 100%; height: 2px; background: rgba(255,255,255,0.2); }
+        .circulo-c { position: absolute; top: 50%; left: 50%; width: 70px; height: 70px; border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; transform: translate(-50%, -50%); }
+        
+        .connector-line { position: absolute; top: 50%; left: 20%; right: 20%; height: 2px; background: repeating-linear-gradient(90deg, transparent, transparent 4px, var(--gold) 4px, var(--gold) 8px); z-index: 1; display: none; }
+        .center-hub { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 44px; height: 44px; background: var(--panel-bg); border: 2px dashed var(--gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; color: var(--gold); z-index: 2; display: none; }
+        
+        .jugador { position: absolute; width: 65px; text-align: center; transform: translate(-50%, -50%); z-index: 3; }
+        .ficha { width: 34px; height: 34px; background: white; color: black; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 11px; border: 2px solid var(--dark-pitch); box-shadow: 0 3px 6px rgba(0,0,0,0.3); transition: background 0.3s; }
+        
+        .ficha.incognito { background: var(--danger-neon) !important; color: white !important; }
+        .ficha.revelado-intruso { background: var(--gold) !important; color: black !important; }
+        .ficha.enmascarado { background: #334155 !important; color: white !important; cursor: pointer; }
+        
+        /* CAMISETAS */
+        .ficha.boca { background: linear-gradient(180deg, #002244 0%, #002244 35%, #ffb612 35%, #ffb612 65%, #002244 65%); color: white; }
+        .ficha.river { background: linear-gradient(135deg, white 0%, white 40%, #ff0000 40%, #ff0000 60%, white 60%); color: black; }
+        .ficha.argentina { background: linear-gradient(90deg, #74ACDF 0%, #74ACDF 33%, white 33%, white 66%, #74ACDF 66%); color: black; }
+        .ficha.brasil { background: linear-gradient(180deg, #ffe119 0%, #ffe119 50%, #009c3b 50%, #009c3b 100%); color: black; }
+        .ficha.espana { background: linear-gradient(180deg, #c60b1e 0%, #c60b1e 40%, #ffc400 40%, #ffc400 60%, #c60b1e 60%); color: white; }
+        .ficha.europea { background: #0052cc; color: white; }
+        .ficha.europea-roja { background: #cc0000; color: white; }
+        .ficha.europea-blanca { background: #eeeeee; color: black; }
+        .ficha.estudiantes { background: linear-gradient(90deg, red 0%, red 20%, white 20%, white 40%, red 40%, red 60%, white 60%, white 80%, red 80%); color: black; border: 2px solid black; }
+        .ficha.culto { background: linear-gradient(45deg, #4b0082, #000000); color: #ffd700; border-color: #ffd700; }
+
+        .nombre-label { background: rgba(10, 14, 23, 0.85); padding: 2px 4px; border-radius: 4px; font-size: 9px; font-weight: bold; margin-top: 3px; border: 1px solid rgba(255,255,255,0.1); white-space: nowrap; }
+        
+        #panel-mayor-menor { display: none; justify-content: center; gap: 15px; margin-top: 15px; }
+        .btn-updown { padding: 12px 25px; font-size: 16px; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; }
+        .btn-up { background: var(--primary-neon); color: black; }
+        .btn-down { background: var(--danger-neon); color: white; }
+        #panel-escritura { margin-top: 12px; text-align: center; }
+        .input-game { width: 80%; padding: 12px; font-size: 15px; border: 2px solid #1e2b40; border-radius: 10px; background: var(--panel-bg); color: white; text-align: center; }
+        .btn-action { width: 85%; padding: 12px; margin-top: 8px; font-size: 15px; font-weight: bold; background: var(--primary-neon); border: none; border-radius: 10px; cursor: pointer; color: black; }
+
+        /* SISTEMA DE TOASTS INTEGRADO */
+        .toast-container {
+            position: fixed;
+            top: -150px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 380px;
+            background: #121e36;
+            border: 2px solid var(--primary-neon);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 1000;
+        }
+        .toast-container.active { top: 20px; }
+        .toast-title { font-weight: 900; font-size: 16px; margin-bottom: 4px; }
+        .toast-msg { font-size: 13px; color: #a0aec0; margin-bottom: 12px; }
+        .toast-btn { padding: 8px 18px; font-weight: bold; background: var(--primary-neon); border: none; border-radius: 6px; cursor: pointer; color: black; }
+    </style>
+</head>
+<body>
+
+    <div id="toast-notif" class="toast-container">
+        <div id="toast-title" class="toast-title">NOTIFICACIÓN</div>
+        <div id="toast-msg" class="toast-msg">Mensaje...</div>
+        <button id="toast-btn" class="toast-btn" onclick="cerrarNotificacion()">Entendido</button>
+    </div>
+
+    <div class="game-container">
+        <div class="global-header">
+            <span style="letter-spacing: 1.5px; color: var(--secondary-neon);">FUTQUIZ ELITE 🏆</span>
+            <div class="coins-box">🪙 <span id="global-coins">100</span> FC</div>
+        </div>
+
+        <!-- 1. MENÚ PRINCIPAL -->
+        <div id="menu-principal">
+            <div class="menu-title">MODOS DE EXPERTO</div>
+            <div class="grid-juegos">
+                <div class="card-juego" onclick="iniciarCategoria(1)"><h3>🔍 1. El Incógnito</h3><p>¿Quién falta en el 11 de culto?</p></div>
+                <div class="card-juego" onclick="iniciarCategoria(2)"><h3>❌ 2. El Intruso</h3><p>Trampas de época. Uno sobra.</p></div>
+                <div class="card-juego" onclick="iniciarCategoria(3)"><h3>🌍 3. Adiviná el Club</h3><p>Equipos históricos por nombres.</p></div>
+                <div class="card-juego" onclick="iniciarCategoria(4)"><h3>🎭 4. Enmascarado</h3><p>Destapá gastando tus FC.</p></div>
+                <div class="card-juego" onclick="iniciarCategoria(5)"><h3>👔 5. DT de Leyenda</h3><p>¿Qué técnico los dirigió a todos?</p></div>
+                <div class="card-juego" onclick="iniciarCategoria(6)"><h3>⚔️ 6. Finales Míticas</h3><p>¿Contra quién fue este partido?</p></div>
+                <div class="card-juego" onclick="iniciarCategoria(7)"><h3>📈 7. Mercado</h3><p>Valores históricos reales.</p></div>
+                <div class="card-juego" onclick="iniciarCategoria(8)"><h3>🔗 8. Nexo Común</h3><p>¿Quién jugó con ambos cracks?</p></div>
+            </div>
+        </div>
+
+        <!-- 2. SELECTOR DE NIVELES -->
+        <div id="pantalla-niveles">
+            <div class="game-nav">
+                <h3 style="margin:0; font-size:14px; color: var(--gold);">NIVELES PROCEDURALES</h3>
+                <div style="display: flex; gap: 6px;">
+                    <button class="btn-reset" onclick="reiniciarProgresoCategoria()">🔄 Barajar</button>
+                    <button class="btn-back" onclick="volverMenuPrincipal()">Volver</button>
+                </div>
+            </div>
+            <div class="lista-niveles" id="contenedor-botones-niveles"></div>
+        </div>
+
+        <!-- 3. INTERFAZ DE JUEGO -->
+        <div id="pantalla-juego">
+            <div class="game-nav">
+                <span id="game-mode-title" style="color: var(--secondary-neon); font-weight: bold; font-size:13px;">DESAFÍO ACTIVO</span>
+                <button class="btn-back" onclick="volverASelectorNiveles()">Salir</button>
+            </div>
+            <div class="info-box"><div id="game-prompt" style="font-size: 13px;">Consigna...</div></div>
+            <div id="cancha">
+                <div class="linea-m"></div>
+                <div class="circulo-c"></div>
+                <div id="linea-conexion" class="connector-line"></div>
+                <div id="centro-nexo" class="center-hub">?</div>
+                <div id="jugadores-layer"></div>
+            </div>
+            <div id="panel-escritura">
+                <input type="text" id="input-answer" class="input-game" placeholder="Escribí tu respuesta..." autocomplete="off">
+                <button class="btn-action" onclick="evaluarRespuesta()">Arriesgar</button>
+            </div>
+            <div id="panel-mayor-menor">
+                <button class="btn-updown btn-up" onclick="evaluarMayorMenor('mayor')">MAYOR ↑</button>
+                <button class="btn-updown btn-down" onclick="evaluarMayorMenor('menor')">MENOR ↓</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+// ==========================================
+// BASE DE DATOS ELITE (MASIVA E INFINITA)
+// ==========================================
+
+const masterHistoricSquads = [
+    // --- ARGENTINA Y SELECCIONES ---
+    { id: "arg22", clubName: "Argentina 2022", shortName: "argentina", style: "argentina", players: ["Dibu Martinez", "Molina", "Romero", "Otamendi", "Tagliafico", "De Paul", "Enzo Fernandez", "Mac Allister", "Messi", "Alvarez", "Di Maria", "Montiel", "Paredes", "Acuña", "Lisandro Martinez"], intruders: ["Lo Celso", "Aguero", "Nico Gonzalez", "Correa", "Armani"], rival: "francia", final: "Final de Lusail 2022. La tercera estrella se consiguió derrotando por penales a:" },
+    { id: "arg14", clubName: "Argentina 2014", shortName: "argentina", style: "argentina", players: ["Romero", "Zabaleta", "Garay", "Demichelis", "Rojo", "Mascherano", "Biglia", "Enzo Perez", "Lavezzi", "Messi", "Higuain", "Di Maria", "Palacio"], intruders: ["Tevez", "Zanetti", "Banega", "Pastore", "Caballero"], rival: "alemania", final: "Final del Maracaná 2014. El sueño se escapó en el alargue contra:" },
+    { id: "arg86", clubName: "Argentina 1986", shortName: "argentina", style: "argentina", players: ["Pumpido", "Cuciuffo", "Brown", "Ruggeri", "Olarticoechea", "Giusti", "Batista", "Enrique", "Burruchaga", "Maradona", "Valdano", "Pasculli"], intruders: ["Passarella", "Gareca", "Fillol", "Tarantini", "Diaz"], rival: "alemania", final: "Final de México 86. El equipo de Bilardo derrotó 3-2 a esta potencia europea:" },
+    { id: "brazil02", clubName: "Brasil 2002", shortName: "brasil", style: "brasil", players: ["Marcos", "Cafu", "Lucio", "Edmilson", "Roque Junior", "Roberto Carlos", "Gilberto Silva", "Kleberson", "Ronaldinho", "Rivaldo", "Ronaldo Nazario"], intruders: ["Romario", "Adriano", "Kaká", "Dida", "Ze Roberto"], rival: "alemania", final: "Final de Corea-Japón 2002. El Fenómeno marcó un doblete para el pentacampeonato contra:" },
+    { id: "espana10", clubName: "España 2010", shortName: "españa", style: "espana", players: ["Casillas", "Ramos", "Pique", "Puyol", "Capdevila", "Busquets", "Xavi", "Xabi Alonso", "Iniesta", "Villa", "Pedro", "Fabregas", "Torres"], intruders: ["Silva", "Navas", "Marcos Senna", "Morata", "Raul"], rival: "holanda", final: "Final de Sudáfrica 2010. El gol de Iniesta en el alargue le dio su primer mundial frente a:" },
+    { id: "francia98", clubName: "Francia 1998", shortName: "francia", style: "europea", players: ["Barthez", "Thuram", "Leboeuf", "Desailly", "Lizarazu", "Deschamps", "Petit", "Karembeu", "Zidane", "Djorkaeff", "Guivarc'h", "Trezeguet", "Henry"], intruders: ["Blanc", "Cantona", "Pires", "Vieira", "Makelele"], rival: "brasil", final: "Final de París 1998. Zidane brilló con un doblete de cabeza para aplastar en la final a:" },
+
+    // --- FÚTBOL ARGENTINO ---
+    { id: "boca00", clubName: "Boca 2000", shortName: "boca", style: "boca", players: ["Cordoba", "Ibarra", "Bermudez", "Samuel", "Arruabarrena", "Traverso", "Basualdo", "Serna", "Riquelme", "Delgado", "Palermo", "Guillermo", "Marchant"], intruders: ["Schiavi", "Gago", "Tevez", "Clemente Rodriguez", "Cascini"], rival: "real madrid", final: "Intercontinental en Japón. Doblete de Palermo y baile de Riquelme frente al histórico:" },
+    { id: "boca03", clubName: "Boca 2003", shortName: "boca", style: "boca", players: ["Abbondanzieri", "Schiavi", "Burdisso", "Clemente Rodriguez", "Perea", "Cascini", "Battaglia", "Donnet", "Cagna", "Tevez", "Iarley", "Guillermo"], intruders: ["Saviola", "Riquelme", "Samuel", "Gago", "Palermo"], rival: "milan", final: "Copa Intercontinental 2003. Triunfo épico por penales ante este club italiano gigante:" },
+    { id: "boca07", clubName: "Boca 2007", shortName: "boca", style: "boca", players: ["Caranta", "Ibarra", "Cata Diaz", "Morel", "Clemente", "Ledesma", "Banega", "Cardozo", "Riquelme", "Palacio", "Palermo", "Datolo"], intruders: ["Gago", "Insua", "Schiavi", "Tevez", "Perez"], rival: "gremio", final: "Final de Libertadores 2007. Actuación descomunal de Riquelme para golear a este equipo de Brasil:" },
+    { id: "boca12", clubName: "Boca 2012 (Falcioni)", shortName: "boca", style: "boca", players: ["Orion", "Roncaglia", "Schiavi", "Insaurralde", "Clemente", "Rivero", "Somoza", "Erviti", "Riquelme", "Silva", "Cvitanich", "Mouche"], intruders: ["Gago", "Palermo", "Benedetto", "Battaglia", "Tevez"], rival: "corinthians", final: "Final Libertadores 2012. Llegaron invictos casi todo el semestre pero cayeron en la final contra:" },
+    { id: "river86", clubName: "River 1986", shortName: "river", style: "river", players: ["Pumpido", "Gordillo", "Nelson Gutierrez", "Ruggeri", "Montenegro", "Enrique", "Gallego", "Alfaro", "Alonso", "Alzamendi", "Funes", "Gorosito"], intruders: ["Francescoli", "Ortega", "Gallardo", "Comizzo", "Astrada"], rival: "steaua bucarest", final: "Copa Intercontinental 1986. El equipo del Bambino Veira ganó el título mundial frente a:" },
+    { id: "river96", clubName: "River 1996", shortName: "river", style: "river", players: ["Burgos", "Hernan Diaz", "Celso Ayala", "Rivarola", "Sorin", "Almeyda", "Astrada", "Ortega", "Francescoli", "Crespo", "Gallardo", "Escudero"], intruders: ["Salas", "Aimar", "Saviola", "Angel", "Yepes"], rival: "america de cali", final: "Final Libertadores 1996. Con doblete de Hernán Crespo, derrotaron a:" },
+    { id: "river15", clubName: "River 2015", shortName: "river", style: "river", players: ["Barovero", "Mercado", "Maidana", "Funes Mori", "Vangioni", "Kranevitter", "Ponzio", "Sanchez", "Rojas", "Pisculichi", "Mora", "Alario", "Gutierrez"], intruders: ["Gago", "Silva", "Driussi", "Nacho Fernandez", "Armani"], rival: "tigres", final: "Bajo la lluvia, River cortó 19 años de sequía de Libertadores goleando a este club mexicano:" },
+    { id: "river18", clubName: "River 2018", shortName: "river", style: "river", players: ["Armani", "Montiel", "Maidana", "Pinola", "Casco", "Enzo Perez", "Ponzio", "Palacios", "Pity Martinez", "Quintero", "Pratto", "Borre", "Nacho Fernandez"], intruders: ["Alario", "Driussi", "Kranevitter", "Sanchez", "Barovero"], rival: "boca", final: "La final más soñada de todos los tiempos en el Bernabéu. Victoria inolvidable frente a:" },
+    { id: "indep02", clubName: "Independiente 2002", shortName: "independiente", style: "europea-roja", players: ["Leo Diaz", "Serrizuela", "Franco", "Milito", "Dominguez", "Pusineri", "Castroman", "Guiñazu", "Insua", "Montenegro", "Silvera", "Rios"], intruders: ["Aguero", "Forlan", "Cambiasso", "Frutos"], rival: "boca", final: "Apertura 2002. Su gran perseguidor hasta la última fecha (con gol icónico de Pusineri) fue:" },
+    { id: "racing01", clubName: "Racing 2001", shortName: "racing", style: "argentina", players: ["Campagnuolo", "Vitali", "Loeschbor", "Ubeda", "Bedoya", "Barros Schelotto", "Bastia", "Chatruc", "Campano", "Estévez", "Maceratesi", "Milito"], intruders: ["Lisandro Lopez", "Moralez", "Latorre", "Simeone"], rival: "velez", final: "El gol de Loeschbor en la última fecha rompió el maleficio de 35 años frente a este equipo:" },
+    { id: "estud09", clubName: "Estudiantes 2009", shortName: "estudiantes", style: "estudiantes", players: ["Andujar", "Cellay", "Schiavi", "Desabato", "Re", "Perez", "Braña", "Veron", "Benitez", "Fernandez", "Boselli", "Calderon"], intruders: ["Riquelme", "Sosa", "Pavone", "Angeleri"], rival: "cruzeiro", final: "El Mineirazo de Sabella. Estudiantes levantó su cuarta Libertadores derrotando a:" },
+    { id: "velez94", clubName: "Velez 1994", shortName: "velez", style: "europea-blanca", players: ["Chilavert", "Almandoz", "Trotta", "Sotomayor", "Cardozo", "Basualdo", "Gomez", "Bassedas", "Pompei", "Asad", "Flores", "Camps"], intruders: ["Zarate", "Cubero", "Pratto", "Castroman", "Moralez"], rival: "milan", final: "La hazaña de Bianchi en Japón. Velez Sarsfield fue campeón del mundo venciendo al poderoso:" },
+    { id: "sanlorenzo14", clubName: "San Lorenzo 2014", shortName: "san lorenzo", style: "europea-roja", players: ["Torrico", "Buffarini", "Cetto", "Gentiletti", "Mas", "Mercier", "Ortigoza", "Villalba", "Piatti", "Romagnoli", "Matos", "Blandi"], intruders: ["Correa", "Silvera", "Romeo", "Lavezzi", "Bergessio"], rival: "nacional", final: "La primera Libertadores de su historia (Bauza DT). En la final superaron a este equipo de Paraguay:" },
+
+    // --- EUROPA ---
+    { id: "rmadrid02", clubName: "Real Madrid 2002", shortName: "real madrid", style: "europea-blanca", players: ["Casillas", "Salgado", "Hierro", "Helguera", "Roberto Carlos", "Makelele", "Figo", "Zidane", "Solari", "Raul", "Morientes", "McManaman"], intruders: ["Ronaldo Nazario", "Beckham", "Sergio Ramos", "Robinho"], rival: "bayer leverkusen", final: "La volea mágica de Zidane les dio la novena Champions frente a este equipo alemán:" },
+    { id: "rmadrid14", clubName: "Real Madrid 2014", shortName: "real madrid", style: "europea-blanca", players: ["Casillas", "Carvajal", "Varane", "Ramos", "Coentrao", "Khedira", "Modric", "Di Maria", "Bale", "Benzema", "Cristiano Ronaldo", "Isco"], intruders: ["Kroos", "Navas", "Pepe", "Ozil", "Higuain"], rival: "atletico madrid", final: "La ansiada Décima de Ancelotti. Empataron en el 92:48 y barrieron en el alargue a:" },
+    { id: "rmadrid17", clubName: "Real Madrid 2017", shortName: "real madrid", style: "europea-blanca", players: ["Navas", "Carvajal", "Varane", "Ramos", "Marcelo", "Casemiro", "Kroos", "Modric", "Isco", "Benzema", "Ronaldo", "Asensio"], intruders: ["Di Maria", "Xabi Alonso", "Pepe", "Casillas", "Ozil"], rival: "juventus", final: "Final de Cardiff 2017. Goleada histórica del equipo de Zidane a este grande de Italia:" },
+    { id: "barca92", clubName: "Barcelona 1992", shortName: "barcelona", style: "europea", players: ["Zubizarreta", "Nando", "Koeman", "Ferrer", "Eusebio", "Guardiola", "Bakero", "Laudrup", "Amor", "Stoichkov", "Salinas", "Goikoetxea"], intruders: ["Romario", "Ronaldo", "Figo", "Rivaldo", "Cruyff"], rival: "sampdoria", final: "La primera Champions culé. El tiro libre de Koeman en Wembley fue frente a:" },
+    { id: "barca09", clubName: "Barcelona 2009", shortName: "barcelona", style: "europea", players: ["Valdes", "Alves", "Puyol", "Pique", "Sylvinho", "Toure", "Xavi", "Iniesta", "Messi", "Eto'o", "Henry", "Busquets", "Pedro"], intruders: ["Villa", "Neymar", "Suarez", "Mascherano", "Fabregas"], rival: "manchester united", final: "El inicio del sextete de Pep Guardiola. Triunfo en Roma sobre:" },
+    { id: "barca15", clubName: "Barcelona 2015", shortName: "barcelona", style: "europea", players: ["Ter Stegen", "Alves", "Pique", "Mascherano", "Alba", "Busquets", "Rakitic", "Iniesta", "Messi", "Suarez", "Neymar", "Xavi"], intruders: ["Puyol", "Villa", "Pedro", "Fabregas", "Griezmann"], rival: "juventus", final: "La final de la MSN en Berlín. Victoria 3-1 para el triplete sobre:" },
+    { id: "milan94", clubName: "Milan 1994", shortName: "milan", style: "europea-roja", players: ["Rossi", "Tassotti", "Costacurta", "Baresi", "Maldini", "Albertini", "Desailly", "Boban", "Donadoni", "Savicevic", "Massaro"], intruders: ["Van Basten", "Gullit", "Rijkaard", "Weah", "Baggio", "Shevchenko"], rival: "barcelona", final: "Final Champions 1994. Le dieron un baile táctico (4-0) al Dream Team de este club español:" },
+    { id: "milan07", clubName: "Milan 2007", shortName: "milan", style: "europea-roja", players: ["Dida", "Oddo", "Nesta", "Maldini", "Jankulovski", "Gattuso", "Pirlo", "Ambrosini", "Seedorf", "Kaka", "Inzaghi", "Cafu"], intruders: ["Shevchenko", "Crespo", "Rui Costa", "Thiago Silva", "Ronaldo"], rival: "liverpool", final: "La revancha de Atenas. Doblete de Inzaghi para vencer a su verdugo del 2005:" },
+    { id: "inter10", clubName: "Inter 2010", shortName: "inter", style: "europea", players: ["Julio Cesar", "Maicon", "Lucio", "Samuel", "Zanetti", "Cambiasso", "Motta", "Sneijder", "Pandev", "Eto'o", "Milito", "Stankovic", "Materazzi"], intruders: ["Ibrahimovic", "Adriano", "Veron", "Figo", "Crespo"], rival: "bayern munich", final: "El triplete mágico de Mourinho culminó con un 2-0 ante:" },
+    { id: "arsenal04", clubName: "Arsenal 2004", shortName: "arsenal", style: "europea-roja", players: ["Lehmann", "Lauren", "Campbell", "Toure", "Cole", "Ljungberg", "Vieira", "Gilberto Silva", "Pires", "Bergkamp", "Henry", "Edu"], intruders: ["Fabregas", "Van Persie", "Adebayor", "Hleb", "Sanchez"], rival: "chelsea", final: "Fueron 'Los Invencibles'. El escolta que no pudo alcanzarlos en esa Premier fue:" },
+    { id: "manutd08", clubName: "Man. United 2008", shortName: "manchester united", style: "europea-roja", players: ["Van der Sar", "Brown", "Ferdinand", "Vidic", "Evra", "Hargreaves", "Scholes", "Carrick", "Cristiano Ronaldo", "Rooney", "Tevez", "Giggs", "Nani"], intruders: ["Van Nistelrooy", "Keane", "Beckham", "Berbatov", "Van Persie"], rival: "chelsea", final: "Lluvia en Moscú. El resbalón de John Terry les dio la Champions frente a:" },
+    { id: "chelsea12", clubName: "Chelsea 2012", shortName: "chelsea", style: "europea", players: ["Cech", "Bosingwa", "David Luiz", "Cahill", "Ashley Cole", "Mikel", "Lampard", "Kalou", "Mata", "Bertrand", "Drogba", "Torres"], intruders: ["Terry", "Ivanovic", "Hazard", "Diego Costa", "Ballack"], rival: "bayern munich", final: "El milagro de Múnich. Drogba empató agónicamente y ganaron por penales a:" },
+    { id: "liverpool19", clubName: "Liverpool 2019", shortName: "liverpool", style: "europea-roja", players: ["Alisson", "Alexander-Arnold", "Matip", "Van Dijk", "Robertson", "Fabinho", "Henderson", "Wijnaldum", "Salah", "Firmino", "Mane", "Origi"], intruders: ["Coutinho", "Gerrard", "Luis Suarez", "Sterling", "Thiago"], rival: "tottenham", final: "El equipo de Klopp levantó su sexta Champions League en Madrid derrotando a:" },
+    { id: "city23", clubName: "Man. City 2023", shortName: "manchester city", style: "europea", players: ["Ederson", "Akanji", "Ruben Dias", "Ake", "Stones", "Rodri", "Gundogan", "De Bruyne", "Bernardo Silva", "Grealish", "Haaland", "Foden"], intruders: ["Sterling", "Aguero", "David Silva", "Cancelo", "Sane"], rival: "inter", final: "Pep Guardiola logró por fin su Champions con el City ganándole 1-0 la final a:" },
+    { id: "bayern13", clubName: "Bayern Munich 2013", shortName: "bayern munich", style: "europea-roja", players: ["Neuer", "Lahm", "Boateng", "Dante", "Alaba", "Martinez", "Schweinsteiger", "Robben", "Muller", "Ribery", "Mandzukic", "Kroos"], intruders: ["Lewandowski", "Gotze", "Thiago", "Kimmich", "Sane"], rival: "borussia dortmund", final: "Gol agónico de Robben en Wembley. El clásico alemán se lo ganaron a:" },
+    { id: "bayern20", clubName: "Bayern Munich 2020", shortName: "bayern munich", style: "europea-roja", players: ["Neuer", "Kimmich", "Boateng", "Alaba", "Davies", "Goretzka", "Thiago", "Gnabry", "Muller", "Coman", "Lewandowski", "Perisic"], intruders: ["Robben", "Ribery", "Sane", "Mane", "Vidal"], rival: "psg", final: "La aplanadora de la pandemia (8-2 al Barça). En la final ganaron con gol de Coman contra:" },
+    { id: "ajax95", clubName: "Ajax 1995", shortName: "ajax", style: "europea-blanca", players: ["Van der Sar", "Reiziger", "Blind", "Frank de Boer", "Rijkaard", "Seedorf", "Davids", "George Finidi", "Litmanen", "Overmars", "Kluivert", "Kanu"], intruders: ["Bergkamp", "Sneijder", "Van der Vaart", "Stam", "Suarez"], rival: "milan", final: "Final Champions 1995. Un equipo plagado de jóvenes promesas derrotó en Viena al poderoso:" }
+];
+
+const dtDatabase = [
+    { dt: "mourinho", players: ["Zanetti", "Drogba", "Cristiano Ronaldo", "Sneijder", "Terry", "Milito", "Sergio Ramos", "Xabi Alonso", "Deco", "Cech", "Eto'o", "Mata"] },
+    { dt: "guardiola", players: ["Messi", "De Bruyne", "Lewandowski", "Lahm", "Xavi", "Iniesta", "Aguero", "Haaland", "Ederson", "Sterling", "Kimmich", "Pique"] },
+    { dt: "ancelotti", players: ["Kaka", "Pirlo", "Shevchenko", "Benzema", "Vinicius", "Bale", "Seedorf", "Lampard", "Maldini", "Gattuso", "Kroos", "James Rodriguez"] },
+    { dt: "bielsa", players: ["Batistuta", "Simeone", "Veron", "Raphinha", "Bamford", "Ander Herrera", "Payet", "Zanetti", "Crespo", "Ayala", "Kily Gonzalez", "Valverde"] },
+    { dt: "gallardo", players: ["Ponzio", "Enzo Perez", "Julian Alvarez", "Armani", "Quintero", "Pity Martinez", "Borre", "Montiel", "Nacho Fernandez", "De La Cruz", "Scocco", "Mora"] },
+    { dt: "bianchi", players: ["Riquelme", "Palermo", "Chilavert", "Tevez", "Bermudez", "Serna", "Abbondanzieri", "Schiavi", "Gareca", "Delgado", "Battaglia", "Trotta"] },
+    { dt: "simeone", players: ["Godin", "Griezmann", "Koke", "Oblak", "Falcao", "Diego Costa", "Courtois", "Arda Turan", "Gimenez", "De Paul", "Correa"] },
+    { dt: "klopp", players: ["Salah", "Mane", "Van Dijk", "Alisson", "Lewandowski", "Reus", "Gotze", "Hummels", "Alexander-Arnold", "Robertson", "Firmino"] },
+    { dt: "ferguson", players: ["Cristiano Ronaldo", "Rooney", "Giggs", "Scholes", "Ferdinand", "Vidic", "Cantona", "Beckham", "Keane", "Van Persie", "Tevez", "Van der Sar"] },
+    { dt: "wenger", players: ["Henry", "Bergkamp", "Vieira", "Fabregas", "Pires", "Van Persie", "Sanchez", "Ozil", "Ljungberg", "Campbell", "Cole"] },
+    { dt: "scaloni", players: ["Messi", "Di Maria", "Dibu Martinez", "De Paul", "Otamendi", "Enzo Fernandez", "Mac Allister", "Julian Alvarez", "Romero", "Lo Celso"] },
+    { dt: "sabella", players: ["Messi", "Mascherano", "Veron", "Di Maria", "Higuain", "Rojo", "Garay", "Romero", "Enzo Perez", "Desabato", "Braña"] }
+];
+
+const nexoDatabase = [
+    { p1: "Cristiano Ronaldo", p2: "Lionel Messi", nexos: ["di maria", "heinze", "pjanic", "gago", "tevez", "deco", "dybala", "garnacho", "higuain", "arthur", "lisandro martinez", "trincao"] },
+    { p1: "Zlatan Ibrahimovic", p2: "Lionel Messi", nexos: ["maxi lopez", "iniesta", "xavi", "pique", "thierry henry", "mascherano", "pinto", "sylvinho"] },
+    { p1: "Wayne Rooney", p2: "Andrea Pirlo", nexos: ["tevez", "pogba", "evra", "cristiano ronaldo", "scholes"] }, 
+    { p1: "Juan Riquelme", p2: "Diego Forlan", nexos: ["arruabarrena", "sorin", "caceres", "senna", "gonzalo rodriguez", "battaglia", "viera", "luis suarez"] },
+    { p1: "Javier Zanetti", p2: "Fernando Redondo", nexos: ["simeone", "batistuta", "crespo", "veron", "samuel", "zanetti", "kily gonzalez"] },
+    { p1: "Neymar", p2: "Erling Haaland", nexos: ["mbappe", "marquinhos", "meunier", "akanji", "gundogan", "dani alves"] },
+    { p1: "Ronaldinho", p2: "Zinedine Zidane", nexos: ["ronaldo nazario", "roberto carlos", "cafu", "makelele", "thuram", "blanc", "beckham"] },
+    { p1: "Kylian Mbappe", p2: "Sergio Aguero", nexos: ["messi", "di maria", "paredes", "bernardo silva", "otamendi", "mendy"] },
+    { p1: "Luis Suarez", p2: "Robert Lewandowski", nexos: ["coutinho", "thiago", "vidal", "griezmann", "dembele"] },
+    { p1: "Eden Hazard", p2: "Kevin De Bruyne", nexos: ["courtois", "lukaku", "kompany", "sterling", "lampard", "eto'o"] }
+];
+
+const mercadoDatabase = [
+    { p: "Neymar al PSG (2017)", val: 222 },
+    { p: "Mbappe al PSG (2018)", val: 180 },
+    { p: "Coutinho al Barcelona (2018)", val: 135 },
+    { p: "Dembele al Barcelona (2017)", val: 135 },
+    { p: "Joao Felix al Atl. Madrid (2019)", val: 127 },
+    { p: "Enzo Fernandez al Chelsea (2023)", val: 121 },
+    { p: "Griezmann al Barcelona (2019)", val: 120 },
+    { p: "Grealish al Man City (2021)", val: 117 },
+    { p: "Rice al Arsenal (2023)", val: 116 },
+    { p: "Caicedo al Chelsea (2023)", val: 116 },
+    { p: "Hazard al Real Madrid (2019)", val: 115 },
+    { p: "Lukaku al Chelsea (2021)", val: 113 },
+    { p: "Pogba al Man Utd (2016)", val: 105 },
+    { p: "Bellingham al Real Madrid (2023)", val: 103 },
+    { p: "Bale al Real Madrid (2013)", val: 101 },
+    { p: "Antony al Man Utd (2022)", val: 95 },
+    { p: "Cristiano al Real Madrid (2009)", val: 94 },
+    { p: "Higuain a la Juventus (2016)", val: 90 },
+    { p: "Neymar al Barcelona (2013)", val: 88 },
+    { p: "Maguire al Man Utd (2019)", val: 87 },
+    { p: "Suarez al Barcelona (2014)", val: 81 },
+    { p: "Zidane al Real Madrid (2001)", val: 77 },
+    { p: "Di Maria al Man Utd (2014)", val: 75 },
+    { p: "James Rodriguez al Real Madrid (2014)", val: 75 },
+    { p: "Maradona al Napoli (1984)", val: 7 } // Trampa histórica
+];
+
+let monedas = 100;
+let juegoActual = null;
+let nivelActual = null;
+let sessionLevels = {}; 
+const nivelesCompletados = new Set(); 
+let equiposUsadosEnSesion = [];
+
+function limpiarTexto(t) {
+    if (!t) return "";
+    return t.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, ''); 
+}
+function getTacticalX(i) { const xs = [50, 30, 70, 50, 20, 80]; return xs[i % xs.length]; }
+function getTacticalY(i) { const ys = [80, 60, 60, 40, 30, 30]; return ys[i % ys.length]; }
+
+function iniciarCategoria(idJuego) {
+    juegoActual = idJuego;
+    if (!sessionLevels[idJuego]) { generateProceduralLevels(idJuego); }
+    verNiveles(idJuego);
+}
+
+function reiniciarProgresoCategoria() {
+    for (let idx = 0; idx < 4; idx++) { nivelesCompletados.delete(`${juegoActual}-${idx}`); }
+    generateProceduralLevels(juegoActual);
+    verNiveles(juegoActual);
+}
+
+// ==========================================
+// MOTOR COMBINATORIO
+// ==========================================
+function generateProceduralLevels(idJuego) {
+    sessionLevels[idJuego] = [];
+    const difficulties = ["facil", "medio", "dificil", "experto"];
+    
+    let equiposCandidatos = masterHistoricSquads.filter(s => !equiposUsadosEnSesion.includes(s.id));
+    if (equiposCandidatos.length < 4) { equiposUsadosEnSesion = []; equiposCandidatos = [...masterHistoricSquads]; }
+    let shuffledSquads = [...equiposCandidatos].sort(() => 0.5 - Math.random());
+    
+    for (let idx = 0; idx < 4; idx++) {
+        let squad = shuffledSquads[idx];
+        equiposUsadosEnSesion.push(squad.id);
+        
+        let playersShuffled = [...squad.players].sort(() => 0.5 - Math.random());
+        let diff = difficulties[idx];
+        let levelData = {};
+
+        if (idJuego >= 1 && idJuego <= 4 || idJuego === 6) {
+            if (idJuego === 1) { // Incognito
+                let selected = playersShuffled.slice(0, 4 + Math.floor(idx/2)); 
+                let hideIdx = Math.floor(Math.random() * selected.length);
+                let hiddenName = selected[hideIdx];
+                let levelPlayers = selected.map((p, i) => ({ n: i === hideIdx ? "¿?" : p, x: getTacticalX(i), y: getTacticalY(i), style: i === hideIdx ? "" : squad.style, type: i === hideIdx ? "incognito" : "" }));
+                levelData = { name: `Táctica en ${squad.clubName}`, diff: diff, prompt: `¿Qué pieza clave falta en este histórico esquema de ${squad.clubName}?`, respuesta: hiddenName, jugadores: levelPlayers };
+            }
+            else if (idJuego === 2) { // Intruso
+                let realPlayers = playersShuffled.slice(0, 3 + Math.floor(idx/2));
+                let intruderName = squad.intruders[Math.floor(Math.random() * squad.intruders.length)];
+                let combined = [...realPlayers, intruderName].sort(() => 0.5 - Math.random());
+                let levelPlayers = combined.map((p, i) => ({ n: p, x: getTacticalX(i), y: getTacticalY(i), style: squad.style }));
+                levelData = { name: `Intruso en ${squad.shortName.toUpperCase()}`, diff: diff, prompt: `Atención experto: Uno de estos futbolistas JAMÁS jugó oficialmente en ${squad.clubName}. ¿Quién sobra?`, respuesta: intruderName, jugadores: levelPlayers };
+            }
+            else if (idJuego === 3) { // Adivina Club
+                let selected = playersShuffled.slice(0, 4);
+                let levelPlayers = selected.map((p, i) => ({ n: p, x: getTacticalX(i), y: getTacticalY(i), style: "culto" }));
+                levelData = { name: `Alineación de Culto #${idx + 1}`, diff: diff, prompt: `¿A qué histórico club o selección pertenece este bloque de jugadores juntos?`, respuesta: squad.shortName, jugadores: levelPlayers };
+            }
+            else if (idJuego === 4) { // Enmascarado
+                let selected = playersShuffled.slice(0, 4);
+                let levelPlayers = selected.map((p, i) => ({ n: p, x: getTacticalX(i), y: getTacticalY(i), style: squad.style, type: "mask" }));
+                levelData = { name: `Enmascarado #${idx + 1}`, diff: diff, prompt: `Destapá fichas tocándolas (-10 FC). ¿De qué histórico equipo de época se trata?`, respuesta: squad.shortName, jugadores: levelPlayers };
+            }
+            else if (idJuego === 6) { // Finales
+                let selected = playersShuffled.slice(0, 4);
+                let levelPlayers = selected.map((p, i) => ({ n: p, x: getTacticalX(i), y: getTacticalY(i), style: squad.style }));
+                levelData = { name: `Final de ${squad.shortName.toUpperCase()}`, diff: diff, prompt: squad.final, respuesta: squad.rival, jugadores: levelPlayers };
+            }
+        }
+        else if (idJuego === 5) { // DT de Leyenda
+            let dt = dtDatabase[Math.floor(Math.random() * dtDatabase.length)];
+            let selectedP = [...dt.players].sort(() => 0.5 - Math.random()).slice(0, 4);
+            let levelPlayers = selectedP.map((p, i) => ({ n: p, x: getTacticalX(i), y: getTacticalY(i), style: "culto" }));
+            levelData = { name: `DT Misterioso #${idx + 1}`, diff: diff, prompt: `Este exigente grupo de 4 superestrellas fue dirigido por el mismo entrenador. ¿Quién es el DT?`, respuesta: dt.dt, jugadores: levelPlayers };
+        }
+        else if (idJuego === 7) { // Mercado
+            let m = mercadoDatabase[Math.floor(Math.random() * mercadoDatabase.length)];
+            let trampaVal = m.val + (Math.random() > 0.5 ? 15 : -15);
+            let correctAns = m.val >= trampaVal ? "mayor" : "menor";
+            levelData = { name: `Traspaso Histórico`, diff: diff, prompt: `En su momento, el pase de ${m.p}, ¿Costó MAYOR o MENOR a €${trampaVal} Millones?`, respuesta: correctAns, jugadores: [], esEspecial: true };
+        }
+        else if (idJuego === 8) { // Nexo
+            let nexo = nexoDatabase[Math.floor(Math.random() * nexoDatabase.length)];
+            let levelPlayers = [ { n: nexo.p1, x: 25, y: 50, style: "culto" }, { n: nexo.p2, x: 75, y: 50, style: "culto" } ];
+            levelData = { name: `Conexión Imposible`, diff: diff, prompt: `Ambos compartieron vestuario oficial con el mismo futbolista. Nombrá al compañero en común:`, respuesta: nexo.nexos, jugadores: levelPlayers, esNexo: true };
+        }
+        sessionLevels[idJuego].push(levelData);
+    }
+}
+
+// Control de UI
+function verNiveles(idJuego) {
+    document.getElementById("menu-principal").style.display = "none";
+    document.getElementById("pantalla-juego").style.display = "none"; 
+    document.getElementById("pantalla-niveles").style.display = "block";
+    let lista = document.getElementById("contenedor-botones-niveles");
+    lista.innerHTML = ""; 
+    sessionLevels[idJuego].forEach((niv, idx) => {
+        const btn = document.createElement("button");
+        btn.className = "btn-nivel";
+        const identificadorNivel = `${idJuego}-${idx}`
