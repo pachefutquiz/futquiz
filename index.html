@@ -142,6 +142,7 @@
     </div>
 
 <script>
+// Base de datos corregida y normalizada sin fallas de mayúsculas
 const dbMundoFútbol = {
     1: [
         { name: "Barça 2011", diff: "facil", prompt: "Campeón de Champions. ¿Qué MC de leyenda completa este Barcelona?", respuesta: "iniesta", jugadores: [{n:"Valdés",x:50,y:85,style:"europea"},{n:"Piqué",x:65,y:72,style:"europea"},{n:"Mascherano",x:35,y:72,style:"europea"},{n:"Xavi",x:72,y:52,style:"europea"},{n:"Busquets",x:50,y:58,style:"europea"},{n:"¿?",x:28,y:52, type:"incognito"},{n:"Messi",x:50,y:22,style:"europea"}] },
@@ -163,7 +164,7 @@ const dbMundoFútbol = {
     ],
     6: [
         { name: "Final México 86", diff: "facil", prompt: "Argentina fue campeón con este esquema. ¿A qué gran país venció en la final?", respuesta: "alemania", jugadores: [{n:"Pumpido",x:50,y:85,style:"argentina"},{n:"Ruggeri",x:35,y:72,style:"argentina"},{n:"Maradona",x:50,y:35,style:"argentina"},{n:"Valdano",x:50,y:18,style:"argentina"}] },
-        { name: "Milagro de Estambul 2005", diff: "dificil", prompt: "El Liverpool de Gerrard empató un 0-3 heroico. ¿A quién le ganó esa final por penales?", respuesta: "milan", jugadores: [{n:"Dudek",x:50,y:85,style:"europea-roja"},{n:"Carragher",x:50,y:70,style:"europea-roja"},{n:"Xabi Alonso",x:38,y:52,style:"europea-roja"},{n:"Gerrard",x:62,y:45,style:"europea-roja"}] }
+        { name: "Milagro de Estambul 2005", diff: "dificil", prompt: "El Liverpool de Gerrard empató un 0-3 heroico. ¿A quién le ganado esa final por penales?", respuesta: "milan", jugadores: [{n:"Dudek",x:50,y:85,style:"europea-roja"},{n:"Carragher",x:50,y:70,style:"europea-roja"},{n:"Xabi Alonso",x:38,y:52,style:"europea-roja"},{n:"Gerrard",x:62,y:45,style:"europea-roja"}] }
     ],
     7: [
         { name: "Plantel de Arsenal FC", diff: "medio", prompt: "El valor total de mercado del Arsenal actual, ¿Supera o no los €1.000 Millones?", respuesta: "mayor", jugadores: [{n:"Raya",x:50,y:85,style:"europea"},{n:"Saliba",x:65,y:72,style:"europea"},{n:"Rice",x:50,y:55,style:"europea"},{n:"Saka",x:80,y:22,style:"europea"}], esEspecial: true },
@@ -174,6 +175,13 @@ const dbMundoFútbol = {
 let monedas = 100;
 let juegoActual = null;
 let nivelActual = null;
+
+// Normalizador inteligente de texto
+function limpiarTexto(t) {
+    return t.trim().toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Saca tildes
+            .replace(/[^a-z0-9]/g, ''); // Saca caracteres raros y espacios
+}
 
 function verNiveles(idJuego) {
     juegoActual = idJuego;
@@ -253,7 +261,7 @@ function dibujarFichas(jugadores) {
         }
         
         div.innerHTML = `
-            <div class="${claseFicha}" id="ficha-${j.n.toLowerCase().replace(/[^a-z0-9]/g, '')}">${textoFicha}</div>
+            <div class="${claseFicha}" id="ficha-${limpiarTexto(j.n)}">${textoFicha}</div>
             <div class="nombre-label">${textoNombre}</div>
         `;
         capa.appendChild(div);
@@ -262,8 +270,8 @@ function dibujarFichas(jugadores) {
 
 function evaluarRespuesta() {
     let nivel = dbMundoFútbol[juegoActual][nivelActual];
-    let rta = document.getElementById("input-answer").value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-    let rtaCorrecta = nivel.respuesta.toLowerCase().replace(/[^a-z0-9]/g, '');
+    let rta = limpiarTexto(document.getElementById("input-answer").value);
+    let rtaCorrecta = limpiarTexto(nivel.respuesta);
     
     if(rta !== "" && (rtaCorrecta.includes(rta) || rta.includes(rtaCorrecta))) {
         let idIntruso = "ficha-" + rtaCorrecta;
