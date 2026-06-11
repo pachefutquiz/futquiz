@@ -758,3 +758,52 @@ function mostrarNotificacion(titulo, mensaje, colorBorde, exito = false) {
     } else
 
 ```
+let monedas = 100;
+let juegoActual = null;
+let nivelActual = null;
+const sessionLevels = {}; 
+const nivelesCompletados = new Set(); 
+// NUEVO: Array para recordar qué equipos ya se jugaron
+let equiposUsados = []; 
+function generateEliteLevels(idJuego) {
+    sessionLevels[idJuego] = [];
+    const difficulties = ["facil", "medio", "dificil", "experto"];
+    
+    // SISTEMA ANTI-REPETICIÓN: Filtramos los equipos que ya jugamos
+    let equiposDisponibles = masterHistoricSquads.filter(squad => !equiposUsados.includes(squad.id));
+
+    // Si nos quedamos sin equipos suficientes para armar 4 niveles, reiniciamos la memoria
+    if (equiposDisponibles.length < 4) {
+        equiposUsados = [];
+        equiposDisponibles = [...masterHistoricSquads];
+    }
+
+    // Mezclamos solo los equipos disponibles
+    let shuffledSquads = [...equiposDisponibles].sort(() => 0.5 - Math.random());
+
+    for (let idx = 0; idx < 4; idx++) {
+        // Tomamos el equipo de forma secuencial de los mezclados
+        let squad = shuffledSquads[idx];
+        
+        // Lo guardamos en la memoria para que no vuelva a salir pronto
+        if (!equiposUsados.includes(squad.id)) {
+            equiposUsados.push(squad.id);
+        }
+
+        let playersShuffled = [...squad.players].sort(() => 0.5 - Math.random());
+        let diff = difficulties[idx];
+        let levelData = {};
+
+        // ... (A partir de acá tu código sigue EXACTAMENTE igual con los "if (idJuego === 1)", etc.)
+function reiniciarProgresoCategoria() {
+    for (let idx = 0; idx < 4; idx++) {
+        const identificadorNivel = `${juegoActual}-${idx}`;
+        nivelesCompletados.delete(identificadorNivel);
+    }
+    
+    // Vaciamos la memoria para barajar todo de cero en esta categoría
+    equiposUsados = []; 
+    
+    generateEliteLevels(juegoActual);
+    verNiveles(juegoActual);
+}
